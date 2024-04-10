@@ -20,30 +20,34 @@ class Server:
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'], shuffle=False)
 
+
+
+
     def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
 
+        initial_model_state = {k: v.clone() for k, v in self.model.state_dict().items()}
+
         # average
-        with torch.no_grad():
-            if len(model_state_dict) > 0:
-                self.optimizer['global'].zero_grad()
-                valid_data_size = [len(self.data_split['data'][active_client_id[i]])
-                                   for i in range(len(active_client_id))]
-                weight = torch.tensor(valid_data_size)
-                weight = weight / weight.sum()
-                for k, v in self.model.named_parameters():
-                    parameter_type = k.split('.')[-1]
-                    if 'weight' in parameter_type or 'bias' in parameter_type:
-                        tmp_v = v.data.new_zeros(v.size())
-                        for i in range(len(active_client_id)):
+        # with torch.no_grad():
+        #     if len(model_state_dict) > 0:
+        #         self.optimizer['global'].zero_grad()
+        #         valid_data_size = [len(self.data_split['data'][active_client_id[i]])
+        #                            for i in range(len(active_client_id))]
+        #         weight = torch.tensor(valid_data_size)
+        #         weight = weight / weight.sum()
+        #         for k, v in self.model.named_parameters():
+        #             parameter_type = k.split('.')[-1]
+        #             if 'weight' in parameter_type or 'bias' in parameter_type:
+        #                 tmp_v = v.data.new_zeros(v.size())
+        #                 for i in range(len(active_client_id)):
+        #
+        #                     tmp_v += weight[i] * model_state_dict[i][k]
+        #
+        #                 v.grad = (v.data - tmp_v).detach()
+        #         self.optimizer['global'].step()
+        #         self.scheduler['global'].step()
 
-                            tmp_v += weight[i] * model_state_dict[i][k]
-
-                        v.grad = (v.data - tmp_v).detach()
-                self.optimizer['global'].step()
-                self.scheduler['global'].step()
-
-
-        #client step
+        # client step
         with torch.no_grad():
             if len(model_state_dict) > 0:
                 # self.optimizer['global'].zero_grad()
@@ -59,17 +63,19 @@ class Server:
 
                             v.grad = diff.detach()
 
-                    self.optimizer['global'].step()
-                    self.optimizer['global'].zero_grad()
+                    self.optimizer['client'].step()
+                    self.optimizer['client'].zero_grad()
+                self.scheduler['client'].step()
 
-                self.scheduler['global'].step()
+            for k, v in self.model.named_parameters():
+                if k in initial_model_state:
+
+                    diff = v - initial_model_state[k]
+                    v.grad = diff.detach()
+            self.optimizer['global'].step()
+            self.scheduler['global'].step()
 
 
-            # old
-            #
-            # self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
-            # print(optimizer_state_dict[0])
-            # print("Here")
 
             # new
             merged_state = {}
