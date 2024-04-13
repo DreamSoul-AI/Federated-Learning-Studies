@@ -3,7 +3,7 @@ python3 dist_example.py --rank 0 --world_size 2 --ip 127.0.0.0
 At folder worker, RUN:
 python3 dist_example.py --rank 1 --world_size 2 --ip 127.0.0.0
 
-Expect output from head terminal:
+Expected output from head terminal:
 ../head$ python3 dist_example.py --rank 0 --world_size 2 --ip 127.0.0.0
 Starting on rank 0, connecting to master at 127.0.0.0
 Initializing process group...
@@ -12,7 +12,7 @@ Rank 0 is sending tensor to Rank 1
 Rank 0 has tensor tensor([1.])
 
 
-Expect output from worker terminal:
+Expected output from worker terminal:
 ../worker$ python3 dist_example.py --rank 1 --world_size 2 --ip 127.0.0.0
 Starting on rank 1, connecting to master at 127.0.0.0
 Initializing process group...
