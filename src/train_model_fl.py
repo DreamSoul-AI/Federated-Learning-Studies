@@ -34,6 +34,10 @@ def main():
         tag_list = [str(seeds[i]), cfg['control_name']]
         cfg['tag'] = '_'.join([x for x in tag_list if x])
         process_control()
+
+
+        # print("In main")
+        # print(cfg)
         print('Experiment: {}'.format(cfg['tag']))
 
 
@@ -67,12 +71,15 @@ def runExperiment():
         cfg['step'] = 0
         model = model.to(cfg['device'])
 
+
         optimizer = {'local': make_optimizer(model.parameters(), cfg[cfg['tag']]['local']['optimizer']),
                      'global': make_optimizer(model.parameters(), cfg[cfg['tag']]['global']['optimizer']),
                      'client': make_optimizer(model.parameters(),cfg[cfg['tag']]['client']['optimizer'])}
         scheduler = {'local': make_scheduler(optimizer['local'], cfg[cfg['tag']]['local']['optimizer']),
                      'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer']),
                      'client': make_scheduler(optimizer['client'], cfg[cfg['tag']]['client']['optimizer'])}
+
+
         logger = make_logger(cfg['logger_path'], data_name=cfg['data_name'])
     else:
         cfg['step'] = result['cfg']['step']
@@ -83,20 +90,26 @@ def runExperiment():
         scheduler = {'local': make_scheduler(optimizer['local'], cfg[cfg['tag']]['local']['optimizer']),
                      'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer']),
                      'client': make_scheduler(optimizer['client'], cfg[cfg['tag']]['client']['optimizer'])}
+
+
         logger = make_logger(cfg['logger_path'], data_name=cfg['data_name'])
         model.load_state_dict(result['model'])
 
         optimizer['local'].load_state_dict(result['optimize']['local'])
-        optimizer['global'].load_state_dict(result['optimize']['global'])
         optimizer['client'].load_state_dict(result['optimize']['client'])
+        optimizer['global'].load_state_dict(result['optimize']['global'])
+
         scheduler['local'].load_state_dict(result['scheduler']['local'])
-        scheduler['global'].load_state_dict(result['scheduler']['global'])
         scheduler['client'].load_state_dict(result['scheduler']['client'])
+        scheduler['global'].load_state_dict(result['scheduler']['global'])
+
         logger.load_state_dict(result['logger'])
         logger.reset()
 
 
     controller = make_controller(data_split, model, optimizer, scheduler, logger)
+
+
 
     controller.make_worker(dataset)
 

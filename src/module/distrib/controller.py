@@ -58,11 +58,13 @@ class Controller:
     def update(self):
         self.model.load_state_dict(self.worker['server'].model.state_dict())
         self.optimizer['local'].load_state_dict(self.worker['server'].optimizer['local'].state_dict())
-        self.optimizer['global'].load_state_dict(self.worker['server'].optimizer['global'].state_dict())
         self.optimizer['client'].load_state_dict(self.worker['server'].optimizer['client'].state_dict())
+        self.optimizer['global'].load_state_dict(self.worker['server'].optimizer['global'].state_dict())
+
         self.scheduler['local'].load_state_dict(self.worker['server'].scheduler['local'].state_dict())
-        self.scheduler['global'].load_state_dict(self.worker['server'].scheduler['global'].state_dict())
         self.scheduler['client'].load_state_dict(self.worker['server'].scheduler['client'].state_dict())
+        self.scheduler['global'].load_state_dict(self.worker['server'].scheduler['global'].state_dict())
+
         self.logger.load_state_dict(self.worker['server'].logger.state_dict())
         return
 
