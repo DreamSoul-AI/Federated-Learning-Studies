@@ -40,7 +40,8 @@ def process_control():
     cfg[tag]['optimizer']['optimizer_name'] = cfg['optimizer']['optimizer_name']
     cfg[tag]['optimizer']['lr'] = cfg['optimizer']['lr']
     cfg[tag]['optimizer']['momentum'] = cfg['optimizer']['momentum']
-    cfg[tag]['optimizer']['weight_decay'] = 5e-4
+    # cfg[tag]['optimizer']['weight_decay'] = 5e-4
+    cfg[tag]['optimizer']['weight_decay'] = 0
     cfg[tag]['optimizer']['nesterov'] = True if cfg[tag]['optimizer']['momentum'] != 0 else False
     cfg[tag]['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
     cfg[tag]['optimizer']['step_period'] = cfg['step_period']
@@ -70,7 +71,8 @@ def process_control():
         cfg[tag]['local']['optimizer']['optimizer_name'] = cfg['dist_mode']['optimizer']['optimizer_name']
         cfg[tag]['local']['optimizer']['lr'] = cfg['dist_mode']['optimizer']['lr']
         cfg[tag]['local']['optimizer']['momentum'] = cfg['dist_mode']['optimizer']['momentum']
-        cfg[tag]['local']['optimizer']['weight_decay'] = 5e-4
+        # cfg[tag]['local']['optimizer']['weight_decay'] = 5e-4
+        cfg[tag]['local']['optimizer']['weight_decay'] = 0
         cfg[tag]['local']['optimizer']['nesterov'] = True if cfg[tag]['local']['optimizer']['momentum'] != 0 else False
         cfg[tag]['local']['optimizer']['batch_size'] = {'train': cfg['batch_size'],
                                                         'test': cfg['batch_size']}

@@ -20,6 +20,26 @@ class Server:
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'], shuffle=False)
 
+    # def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
+    #     with torch.no_grad():
+    #         if len(model_state_dict) > 0:
+    #             self.optimizer['global'].zero_grad()
+    #             valid_data_size = [len(self.data_split['data'][active_client_id[i]])
+    #                                for i in range(len(active_client_id))]
+    #             weight = torch.tensor(valid_data_size)
+    #             weight = weight / weight.sum()
+    #             for k, v in self.model.named_parameters():
+    #                 parameter_type = k.split('.')[-1]
+    #                 if 'weight' in parameter_type or 'bias' in parameter_type:
+    #                     tmp_v = v.data.new_zeros(v.size())
+    #                     for i in range(len(active_client_id)):
+    #                         tmp_v += weight[i] * model_state_dict[i][k]
+    #                     v.grad = (v.data - tmp_v).detach()
+    #             self.optimizer['global'].step()
+    #             self.scheduler['global'].step()
+    #             self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
+    #             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
+    #     return
     def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
 
         initial_model_state = {k: v.clone() for k, v in self.model.state_dict().items()}
@@ -80,13 +100,14 @@ class Server:
                                     merged_state[param_idx][state_name] = local_optimizer_state_dict['state'].get(
                                         param_idx, {}).get('step', torch.tensor(0.0))
                                 else:
-                                    merged_state[param_idx][state_name] = state_value.new_zeros(
-                                        size=state_value.size())
+                                    if state_value is not None:
+                                        merged_state[param_idx][state_name] = state_value.new_zeros(
+                                            size=state_value.size())
                             # step max or not
                             # if state_name == 'step':
                             #     merged_state[param_idx][state_name] = max(merged_state[param_idx][state_name],
                             #                                               state_value)
-                            if state_name != 'step':
+                            if state_name != 'step' and state_value is not None:
                                 merged_state[param_idx][state_name] += state_value * weight[i]
 
             optimizer_state_to_load = {'state': merged_state,
