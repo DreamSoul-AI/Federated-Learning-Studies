@@ -24,6 +24,7 @@ class Client:
         model.load_state_dict(model_state_dict)
 
         optimizer = make_optimizer(model.parameters(), self.cfg['optimizer'])
+
         # optimizer_state_dict_ = optimizer.state_dict()
         # optimizer_state_dict_['param_groups'][0]['lr'] = optimizer_state_dict['param_groups'][0]['lr']
         optimizer.load_state_dict(optimizer_state_dict)

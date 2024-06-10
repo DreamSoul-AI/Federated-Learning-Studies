@@ -68,6 +68,7 @@ def main():
         model_name = ['linear', 'mlp', 'cnn', 'resnet18']
         batch_size = ['250']
         step_period = ['1']
+    
         num_steps = ['400']
         eval_period = ['10']
         optimizer_name = ['SGD']
