@@ -40,7 +40,8 @@ def process_control():
     cfg[tag]['optimizer']['optimizer_name'] = cfg['optimizer']['optimizer_name']
     cfg[tag]['optimizer']['lr'] = cfg['optimizer']['lr']
     cfg[tag]['optimizer']['momentum'] = cfg['optimizer']['momentum']
-    cfg[tag]['optimizer']['weight_decay'] = 5e-4
+    # cfg[tag]['optimizer']['weight_decay'] = 5e-4
+    cfg[tag]['optimizer']['weight_decay'] = 0
     cfg[tag]['optimizer']['nesterov'] = True if cfg[tag]['optimizer']['momentum'] != 0 else False
     cfg[tag]['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
     cfg[tag]['optimizer']['step_period'] = cfg['step_period']
@@ -70,7 +71,8 @@ def process_control():
         cfg[tag]['local']['optimizer']['optimizer_name'] = cfg['dist_mode']['optimizer']['optimizer_name']
         cfg[tag]['local']['optimizer']['lr'] = cfg['dist_mode']['optimizer']['lr']
         cfg[tag]['local']['optimizer']['momentum'] = cfg['dist_mode']['optimizer']['momentum']
-        cfg[tag]['local']['optimizer']['weight_decay'] = 5e-4
+        # cfg[tag]['local']['optimizer']['weight_decay'] = 5e-4
+        cfg[tag]['local']['optimizer']['weight_decay'] = 0
         cfg[tag]['local']['optimizer']['nesterov'] = True if cfg[tag]['local']['optimizer']['momentum'] != 0 else False
         cfg[tag]['local']['optimizer']['batch_size'] = {'train': cfg['batch_size'],
                                                         'test': cfg['batch_size']}
@@ -91,4 +93,24 @@ def process_control():
         cfg[tag]['global']['optimizer']['step_period'] = cfg['step_period']
         cfg[tag]['global']['optimizer']['num_steps'] = cfg['num_steps']
         cfg[tag]['global']['optimizer']['scheduler_name'] = 'None'
+
+        client_optimizer_cfg = cfg['control']['client_optimizer']['optimizer']
+
+        cfg[tag]['client'] = {}
+        cfg[tag]['client']['optimizer'] = {}
+        cfg[tag]['client']['optimizer']['optimizer_name'] = client_optimizer_cfg['optimizer_name']
+        cfg[tag]['client']['optimizer']['lr'] = float(client_optimizer_cfg['lr'])
+        cfg[tag]['client']['optimizer']['momentum'] = [float(x) for x in
+                                                       str(client_optimizer_cfg['momentum']).split('-')]
+        cfg[tag]['client']['optimizer']['momentum'] = cfg[tag]['client']['optimizer']['momentum'][0] \
+            if len(cfg[tag]['client']['optimizer']['momentum']) == 1 else cfg[tag]['client']['optimizer']['momentum']
+        cfg[tag]['client']['optimizer']['weight_decay'] = 0
+        cfg[tag]['client']['optimizer']['nesterov'] = True if cfg[tag]['client']['optimizer'][
+                                                                  'momentum'] != 0 else False
+
+        cfg[tag]['client']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
+        cfg[tag]['client']['optimizer']['step_period'] = cfg['step_period']
+        cfg[tag]['client']['optimizer']['num_steps'] = cfg['num_steps']
+        cfg[tag]['client']['optimizer']['scheduler_name'] = client_optimizer_cfg['scheduler_name']
+
     return

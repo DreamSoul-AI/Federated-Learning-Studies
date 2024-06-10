@@ -11,6 +11,7 @@ from module import to_device
 from .ray_server import Server
 from .ray_client import Client
 
+
 class Controller:
     def __init__(self, data_split, model, optimizer, scheduler, logger):
         self.data_split = data_split
@@ -21,13 +22,19 @@ class Controller:
         self.worker = {}
 
     def make_worker(self, dataset):
+
+
+
         # Initialize Ray if not already done
         if not ray.is_initialized():
             ray.init()
+
         self.worker['server'] = Server(0, dataset, self.data_split, self.model, self.optimizer,
                                        self.scheduler, self.logger, cfg[cfg['tag']]['global'])
+
         local_cfg = self.make_local_cfg()
         self.worker['client'] = []
+
         for i in range(len(self.data_split['data'])):
             dataset_i = {k: split_dataset(dataset[k], self.data_split['data'][i][k]) for k in dataset}
             client_i = Client.remote(i, dataset_i, local_cfg)
@@ -51,9 +58,13 @@ class Controller:
     def update(self):
         self.model.load_state_dict(self.worker['server'].model.state_dict())
         self.optimizer['local'].load_state_dict(self.worker['server'].optimizer['local'].state_dict())
+        self.optimizer['client'].load_state_dict(self.worker['server'].optimizer['client'].state_dict())
         self.optimizer['global'].load_state_dict(self.worker['server'].optimizer['global'].state_dict())
+
         self.scheduler['local'].load_state_dict(self.worker['server'].scheduler['local'].state_dict())
+        self.scheduler['client'].load_state_dict(self.worker['server'].scheduler['client'].state_dict())
         self.scheduler['global'].load_state_dict(self.worker['server'].scheduler['global'].state_dict())
+
         self.logger.load_state_dict(self.worker['server'].logger.state_dict())
         return
 
@@ -72,14 +83,17 @@ class Controller:
         return self.model.state_dict()
 
     def optimizer_state_dict(self):
-        return {'local': self.optimizer['local'].state_dict(), 'global': self.optimizer['global'].state_dict()}
+        return {'local': self.optimizer['local'].state_dict(),
+                'global': self.optimizer['global'].state_dict(),
+                'client': self.optimizer['client'].state_dict()}
 
     def scheduler_state_dict(self):
-        return {'local': self.scheduler['local'].state_dict(), 'global': self.scheduler['global'].state_dict()}
+        return {'local': self.scheduler['local'].state_dict(),
+                'global': self.scheduler['global'].state_dict(),
+                'client': self.scheduler['client'].state_dict()}
 
     def logger_state_dict(self):
         return self.logger.state_dict()
-
 
 
 def make_controller(data_split, model, optimizer, scheduler, logger):
