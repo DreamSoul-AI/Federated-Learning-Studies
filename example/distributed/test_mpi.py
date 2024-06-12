@@ -1,3 +1,4 @@
+import socket
 import torch
 import torch.distributed as dist
 import os
@@ -6,6 +7,10 @@ import sys
 from mpi4py import MPI
 
 def main():
+    # Print the hostname
+    hostname = socket.gethostname()
+    print(f"Hostname: {hostname}")
+
     # Initialize MPI
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
