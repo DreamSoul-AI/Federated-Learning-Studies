@@ -34,8 +34,11 @@ class Client:
 
         logger = make_logger(self.cfg['logger_path'], data_name=self.cfg['data_name'])
         model.train(True)
+
+        # total_steps = 0  # 初始化 steps 计数器
         with logger.profiler:
             for i, input in enumerate(self.data_loader['train']):
+                # total_steps += 1  # 每次迭代增加 steps 计数器
                 if i % cfg['step_period'] == 0 and cfg['profile']:
                     logger.profiler.step()
                 input_size = input['data'].size(0)
@@ -53,6 +56,7 @@ class Client:
         model = model.to('cpu')
         result = {'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(),
                   'scheduler_state_dict': scheduler.state_dict(), 'logger_state_dict': logger.state_dict()}
+
         return result
 
     def make_batchnorm(self, model_state_dict, momentum, track_running_stats):

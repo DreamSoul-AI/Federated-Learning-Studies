@@ -20,31 +20,11 @@ class Server:
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'], shuffle=False)
 
-    # def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
-    #     with torch.no_grad():
-    #         if len(model_state_dict) > 0:
-    #             self.optimizer['global'].zero_grad()
-    #             valid_data_size = [len(self.data_split['data'][active_client_id[i]])
-    #                                for i in range(len(active_client_id))]
-    #             weight = torch.tensor(valid_data_size)
-    #             weight = weight / weight.sum()
-    #             for k, v in self.model.named_parameters():
-    #                 parameter_type = k.split('.')[-1]
-    #                 if 'weight' in parameter_type or 'bias' in parameter_type:
-    #                     tmp_v = v.data.new_zeros(v.size())
-    #                     for i in range(len(active_client_id)):
-    #                         tmp_v += weight[i] * model_state_dict[i][k]
-    #                     v.grad = (v.data - tmp_v).detach()
-    #             self.optimizer['global'].step()
-    #             self.scheduler['global'].step()
-    #             self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
-    #             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
-    #     return
     def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
 
         initial_model_state = {k: v.clone() for k, v in self.model.state_dict().items()}
 
-        # client step
+        # fed level
         with torch.no_grad():
             if len(model_state_dict) > 0:
 
@@ -63,6 +43,7 @@ class Server:
                     self.optimizer['client'].step()
                     self.scheduler['client'].step()
 
+            # global level
             diffs = {}
             for k, v in self.model.named_parameters():
                 parameter_type = k.split('.')[-1]
@@ -79,7 +60,7 @@ class Server:
             self.optimizer['global'].step()
             self.scheduler['global'].step()
 
-            # new
+            # local level
             merged_state = {}
             possible_state_keys = ['momentum_buffer', 'exp_avg', 'exp_avg_sq']
 
@@ -113,9 +94,6 @@ class Server:
             optimizer_state_to_load = {'state': merged_state,
                                        'param_groups': local_optimizer_state_dict['param_groups']}
             self.optimizer['local'].load_state_dict(optimizer_state_to_load)
-
-            # old
-            # self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
 
             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
 
@@ -152,7 +130,9 @@ class Server:
                          'Experiment Finished Time: {}'.format(exp_finished_time)]}
         self.logger.append(info, 'train')
         print(self.logger.write('train'))
+
         cfg['step'] += cfg[cfg['tag']]['local']['dist_mode']['num_steps']
+
         return active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict
 
     def make_batchnorm_server(self, momentum, track_running_stats):
