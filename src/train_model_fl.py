@@ -66,6 +66,9 @@ def runExperiment():
 
     result = resume(os.path.join(cfg['checkpoint_path'], 'model'), resume_mode=cfg['resume_mode'])
 
+    print(os.path.join(cfg['checkpoint_path'], 'model'))
+    print("AA")
+    print(result)
 
     if result is None:
         cfg['step'] = 0
@@ -98,6 +101,9 @@ def runExperiment():
         optimizer['local'].load_state_dict(result['optimize']['local'])
         optimizer['client'].load_state_dict(result['optimize']['client'])
         optimizer['global'].load_state_dict(result['optimize']['global'])
+
+
+
 
         scheduler['local'].load_state_dict(result['scheduler']['local'])
         scheduler['client'].load_state_dict(result['scheduler']['client'])
