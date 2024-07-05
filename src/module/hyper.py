@@ -55,62 +55,35 @@ def process_control():
         cfg['dist_mode'] = cfg['control']['dist_mode']
         cfg['dist_mode']['active_ratio'] = float(cfg['dist_mode']['active_ratio'])
         cfg['dist_mode']['num_steps'] = int(cfg['dist_mode']['num_steps'])
-        cfg['dist_mode']['optimizer']['optimizer_name'] = cfg['dist_mode']['optimizer']['optimizer_name']
-        cfg['dist_mode']['optimizer']['lr'] = float(cfg['dist_mode']['optimizer']['lr'])
-        cfg['dist_mode']['optimizer']['momentum'] = [float(x) for x in str(cfg['dist_mode'][
-                                                                               'optimizer']['momentum']).split('-')]
-        cfg['dist_mode']['optimizer']['momentum'] = cfg['dist_mode']['optimizer']['momentum'][0] \
-            if len(cfg['dist_mode']['optimizer']['momentum']) == 1 else cfg['dist_mode']['optimizer']['momentum']
-        cfg['dist_mode']['optimizer']['scheduler_name'] = cfg['dist_mode']['optimizer']['scheduler_name']
 
         cfg[tag]['local'] = {}
         cfg[tag]['local']['device'] = cfg['device']
         cfg[tag]['local']['model'] = cfg['model']
-        cfg[tag]['local']['dist_mode'] = cfg['dist_mode']
-        cfg[tag]['local']['optimizer'] = {}
-        cfg[tag]['local']['optimizer']['optimizer_name'] = cfg['dist_mode']['optimizer']['optimizer_name']
-        cfg[tag]['local']['optimizer']['lr'] = cfg['dist_mode']['optimizer']['lr']
-        cfg[tag]['local']['optimizer']['momentum'] = cfg['dist_mode']['optimizer']['momentum']
-        # cfg[tag]['local']['optimizer']['weight_decay'] = 5e-4
+
+        cfg[tag]['local']['optimizer'] = cfg['dist_mode']['local_optimizer']
+        cfg[tag]['local']['optimizer']['lr'] = float(cfg[tag]['local']['optimizer']['lr'])
+        cfg[tag]['local']['optimizer']['momentum'] = float(cfg[tag]['local']['optimizer']['momentum'])
         cfg[tag]['local']['optimizer']['weight_decay'] = 0
         cfg[tag]['local']['optimizer']['nesterov'] = True if cfg[tag]['local']['optimizer']['momentum'] != 0 else False
-        cfg[tag]['local']['optimizer']['batch_size'] = {'train': cfg['batch_size'],
-                                                        'test': cfg['batch_size']}
+        cfg[tag]['local']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
         cfg[tag]['local']['optimizer']['step_period'] = cfg['step_period']
-        cfg[tag]['local']['optimizer']['num_steps'] = cfg['num_steps']
-        cfg[tag]['local']['optimizer']['num_local_steps'] = cfg['dist_mode']['num_steps']
-        cfg[tag]['local']['optimizer']['scheduler_name'] = 'CosineAnnealingLR'
+        cfg[tag]['local']['optimizer']['num_steps'] = cfg['dist_mode']['num_steps']
+
+        cfg[tag]['fed'] = {}
+        cfg[tag]['fed']['device'] = cfg['device']
+        cfg[tag]['fed']['model'] = cfg['model']
+
+        cfg[tag]['fed']['optimizer'] = cfg['dist_mode']['fed_optimizer']
+        cfg[tag]['fed']['optimizer']['lr'] = float(cfg[tag]['fed']['optimizer']['lr'])
+        cfg[tag]['fed']['optimizer']['momentum'] = float(cfg[tag]['fed']['optimizer']['momentum'])
+        cfg[tag]['fed']['optimizer']['weight_decay'] = 0
+        cfg[tag]['fed']['optimizer']['nesterov'] = True if cfg[tag]['fed']['optimizer']['momentum'] != 0 else False
+        cfg[tag]['fed']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
+        cfg[tag]['fed']['optimizer']['step_period'] = cfg['step_period']
+        cfg[tag]['fed']['optimizer']['num_steps'] = cfg['dist_mode']['num_steps']
 
         cfg[tag]['global'] = {}
-        cfg[tag]['global']['optimizer'] = {}
-        cfg[tag]['global']['optimizer']['optimizer_name'] = cfg['optimizer']['optimizer_name']
-        cfg[tag]['global']['optimizer']['lr'] = cfg['optimizer']['lr']
-        cfg[tag]['global']['optimizer']['momentum'] = cfg['optimizer']['momentum']
-        cfg[tag]['global']['optimizer']['weight_decay'] = 0
-        cfg[tag]['global']['optimizer']['nesterov'] = True if cfg[tag]['global']['optimizer'][
-                                                                  'momentum'] != 0 else False
-        cfg[tag]['global']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
-        cfg[tag]['global']['optimizer']['step_period'] = cfg['step_period']
-        cfg[tag]['global']['optimizer']['num_steps'] = cfg['num_steps']
-        cfg[tag]['global']['optimizer']['scheduler_name'] = 'None'
-
-        client_optimizer_cfg = cfg['control']['client_optimizer']['optimizer']
-
-        cfg[tag]['client'] = {}
-        cfg[tag]['client']['optimizer'] = {}
-        cfg[tag]['client']['optimizer']['optimizer_name'] = client_optimizer_cfg['optimizer_name']
-        cfg[tag]['client']['optimizer']['lr'] = float(client_optimizer_cfg['lr'])
-        cfg[tag]['client']['optimizer']['momentum'] = [float(x) for x in
-                                                       str(client_optimizer_cfg['momentum']).split('-')]
-        cfg[tag]['client']['optimizer']['momentum'] = cfg[tag]['client']['optimizer']['momentum'][0] \
-            if len(cfg[tag]['client']['optimizer']['momentum']) == 1 else cfg[tag]['client']['optimizer']['momentum']
-        cfg[tag]['client']['optimizer']['weight_decay'] = 0
-        cfg[tag]['client']['optimizer']['nesterov'] = True if cfg[tag]['client']['optimizer'][
-                                                                  'momentum'] != 0 else False
-
-        cfg[tag]['client']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
-        cfg[tag]['client']['optimizer']['step_period'] = cfg['step_period']
-        cfg[tag]['client']['optimizer']['num_steps'] = cfg['num_steps']
-        cfg[tag]['client']['optimizer']['scheduler_name'] = client_optimizer_cfg['scheduler_name']
-
+        cfg[tag]['global']['device'] = cfg['device']
+        cfg[tag]['global']['model'] = cfg['model']
+        cfg[tag]['global']['optimizer'] = cfg[tag]['optimizer']
     return

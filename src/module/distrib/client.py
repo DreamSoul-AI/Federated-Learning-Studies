@@ -1,6 +1,3 @@
-
-import ray
-
 import torch
 from config import cfg
 from dataset import make_data_loader, split_dataset
@@ -9,15 +6,13 @@ from metric import make_logger
 from module import to_device
 
 
-
-@ray.remote
 class Client:
     def __init__(self, id, dataset, cfg):
         self.id = id
         self.dataset = dataset
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'],
-                                            self.cfg['optimizer']['num_local_steps'])
+                                            self.cfg['optimizer']['num_steps'])
 
     def train(self, model_state_dict, optimizer_state_dict, scheduler_state_dict):
         model = make_model(self.cfg['model']).to(self.cfg['device'])

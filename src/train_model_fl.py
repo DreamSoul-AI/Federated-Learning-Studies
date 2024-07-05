@@ -1,8 +1,3 @@
-# uncomment the following 2 lines to run it locally
-import sys
-
-sys.path.insert(0, '/RayFL/src')
-
 import argparse
 import os
 import shutil
@@ -25,26 +20,14 @@ args = vars(parser.parse_args())
 process_args(args)
 
 
-
-
-
 def main():
     seeds = list(range(cfg['init_seed'], cfg['init_seed'] + cfg['num_experiments']))
     for i in range(cfg['num_experiments']):
         tag_list = [str(seeds[i]), cfg['control_name']]
         cfg['tag'] = '_'.join([x for x in tag_list if x])
         process_control()
-
-
-        # print("In main")
-        # print(cfg)
         print('Experiment: {}'.format(cfg['tag']))
-
-
-
         runExperiment()
-
-
     return
 
 
@@ -62,67 +45,41 @@ def runExperiment():
     model = make_model(cfg['model'])
     data_split = make_split(dataset, cfg['data_mode']['num_splits'], cfg['data_mode']['split_mode'],
                             cfg['data_mode']['stat_mode'])
-
-
-    result = resume(os.path.join(cfg['checkpoint_path'], 'model'), resume_mode=cfg['resume_mode'])
-
-    print(os.path.join(cfg['checkpoint_path'], 'model'))
-    print("AA")
-    print(result)
-
+    result = resume(os.path.join(cfg['checkpoint_path']), resume_mode=cfg['resume_mode'])
     if result is None:
         cfg['step'] = 0
         model = model.to(cfg['device'])
-
-
         optimizer = {'local': make_optimizer(model.parameters(), cfg[cfg['tag']]['local']['optimizer']),
-                     'global': make_optimizer(model.parameters(), cfg[cfg['tag']]['global']['optimizer']),
-                     'client': make_optimizer(model.parameters(),cfg[cfg['tag']]['client']['optimizer'])}
+                     'fed': make_optimizer(model.parameters(), cfg[cfg['tag']]['fed']['optimizer']),
+                     'global': make_optimizer(model.parameters(), cfg[cfg['tag']]['global']['optimizer'])}
         scheduler = {'local': make_scheduler(optimizer['local'], cfg[cfg['tag']]['local']['optimizer']),
-                     'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer']),
-                     'client': make_scheduler(optimizer['client'], cfg[cfg['tag']]['client']['optimizer'])}
-
-
+                     'fed': make_scheduler(optimizer['fed'], cfg[cfg['tag']]['fed']['optimizer']),
+                     'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer'])}
         logger = make_logger(cfg['logger_path'], data_name=cfg['data_name'])
     else:
         cfg['step'] = result['cfg']['step']
         model = model.to(cfg['device'])
         optimizer = {'local': make_optimizer(model.parameters(), cfg[cfg['tag']]['local']['optimizer']),
-                     'global': make_optimizer(model.parameters(), cfg[cfg['tag']]['global']['optimizer']),
-                     'client': make_optimizer(model.parameters(),cfg[cfg['tag']]['client']['optimizer'])}
+                     'fed': make_optimizer(model.parameters(), cfg[cfg['tag']]['fed']['optimizer']),
+                     'global': make_optimizer(model.parameters(), cfg[cfg['tag']]['global']['optimizer'])}
         scheduler = {'local': make_scheduler(optimizer['local'], cfg[cfg['tag']]['local']['optimizer']),
-                     'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer']),
-                     'client': make_scheduler(optimizer['client'], cfg[cfg['tag']]['client']['optimizer'])}
-
-
+                     'fed': make_scheduler(optimizer['fed'], cfg[cfg['tag']]['fed']['optimizer']),
+                     'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer'])}
         logger = make_logger(cfg['logger_path'], data_name=cfg['data_name'])
         model.load_state_dict(result['model'])
-
         optimizer['local'].load_state_dict(result['optimize']['local'])
-        optimizer['client'].load_state_dict(result['optimize']['client'])
+        optimizer['fed'].load_state_dict(result['optimize']['fed'])
         optimizer['global'].load_state_dict(result['optimize']['global'])
-
-
-
-
         scheduler['local'].load_state_dict(result['scheduler']['local'])
-        scheduler['client'].load_state_dict(result['scheduler']['client'])
+        scheduler['fed'].load_state_dict(result['scheduler']['fed'])
         scheduler['global'].load_state_dict(result['scheduler']['global'])
-
         logger.load_state_dict(result['logger'])
         logger.reset()
 
-
     controller = make_controller(data_split, model, optimizer, scheduler, logger)
-
-
-
     controller.make_worker(dataset)
-
-
     while cfg['step'] < cfg['num_steps']:
         controller.train()
-
         if cfg['step'] % cfg['eval_period'] == 0:
             controller.test()
         controller.update()
@@ -135,8 +92,6 @@ def runExperiment():
         if logger.compare('test'):
             shutil.copytree(cfg['checkpoint_path'], cfg['best_path'], dirs_exist_ok=True)
         logger.reset()
-
-
     return
 
 

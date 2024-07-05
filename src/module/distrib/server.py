@@ -1,6 +1,5 @@
 import datetime
 import numpy as np
-import ray
 import time
 import torch
 from config import cfg
@@ -33,15 +32,15 @@ class Server:
                 weight = torch.tensor(valid_data_size)
                 weight = weight / weight.sum()
                 for i in range(len(active_client_id)):
-                    self.optimizer['client'].zero_grad()
+                    self.optimizer['local'].zero_grad()
                     for k, v in self.model.named_parameters():
                         parameter_type = k.split('.')[-1]
                         if 'weight' in parameter_type or 'bias' in parameter_type:
                             diff = v.data - model_state_dict[i][k]
 
                             v.grad = diff.detach()
-                    self.optimizer['client'].step()
-                    self.scheduler['client'].step()
+                    self.optimizer['fed'].step()
+                    self.scheduler['fed'].step()
 
             # global level
             diffs = {}
@@ -107,12 +106,11 @@ class Server:
         result = []
 
         for i in range(len(active_client)):
-            result_i = active_client[i].train.remote(self.model.state_dict(),
+            result_i = active_client[i].train(self.model.state_dict(),
                                                      self.optimizer['local'].state_dict(),
                                                      self.scheduler['local'].state_dict())
 
             result.append(result_i)
-        result = ray.get(result)
 
         model_state_dict = [result[i]['model_state_dict'] for i in range(len(result))]
         optimizer_state_dict = [result[i]['optimizer_state_dict'] for i in range(len(result))]
@@ -131,7 +129,7 @@ class Server:
         self.logger.append(info, 'train')
         print(self.logger.write('train'))
 
-        cfg['step'] += cfg[cfg['tag']]['local']['dist_mode']['num_steps']
+        cfg['step'] += cfg[cfg['tag']]['local']['optimizer']['num_steps']
 
         return active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict
 
@@ -169,7 +167,6 @@ class Server:
             for j in range(i, upper_bound):
                 result_i_j = client[i + j].make_batchnorm.remote(self.model.state_dict(), momentum, track_running_stats)
                 result_i.append(result_i_j)
-            result_i = ray.get(result_i)
             result.extend(result_i)
         model_state_dict = [result[i]['model_state_dict'] for i in range(len(result)) if result[i] is not None]
 
@@ -205,7 +202,6 @@ class Server:
             for j in range(i, upper_bound):
                 result_i_j = client[i + j].test.remote(self.model.state_dict())
                 result_i.append(result_i_j)
-            result_i = ray.get(result_i)
             result.extend(result_i)
         logger_state_dict = [result[i]['logger_state_dict'] for i in range(len(result))]
         for i in range(len(logger_state_dict)):

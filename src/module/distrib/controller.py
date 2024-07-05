@@ -1,6 +1,5 @@
 import datetime
 import numpy as np
-import ray
 import time
 import torch
 from config import cfg
@@ -8,8 +7,8 @@ from dataset import make_data_loader, split_dataset
 from model import make_model, make_optimizer, make_scheduler, make_batchnorm
 from metric import make_logger
 from module import to_device
-from .ray_server import Server
-from .ray_client import Client
+from .server import Server
+from .client import Client
 
 
 class Controller:
@@ -22,13 +21,6 @@ class Controller:
         self.worker = {}
 
     def make_worker(self, dataset):
-
-
-
-        # Initialize Ray if not already done
-        if not ray.is_initialized():
-            ray.init()
-
         self.worker['server'] = Server(0, dataset, self.data_split, self.model, self.optimizer,
                                        self.scheduler, self.logger, cfg[cfg['tag']]['global'])
 
@@ -37,7 +29,8 @@ class Controller:
 
         for i in range(len(self.data_split['data'])):
             dataset_i = {k: split_dataset(dataset[k], self.data_split['data'][i][k]) for k in dataset}
-            client_i = Client.remote(i, dataset_i, local_cfg)
+            # client_i = Client.remote(i, dataset_i, local_cfg)
+            client_i = Client(i, dataset_i, local_cfg)
             self.worker['client'].append(client_i)
         return
 
@@ -58,11 +51,11 @@ class Controller:
     def update(self):
         self.model.load_state_dict(self.worker['server'].model.state_dict())
         self.optimizer['local'].load_state_dict(self.worker['server'].optimizer['local'].state_dict())
-        self.optimizer['client'].load_state_dict(self.worker['server'].optimizer['client'].state_dict())
+        self.optimizer['fed'].load_state_dict(self.worker['server'].optimizer['fed'].state_dict())
         self.optimizer['global'].load_state_dict(self.worker['server'].optimizer['global'].state_dict())
 
         self.scheduler['local'].load_state_dict(self.worker['server'].scheduler['local'].state_dict())
-        self.scheduler['client'].load_state_dict(self.worker['server'].scheduler['client'].state_dict())
+        self.scheduler['fed'].load_state_dict(self.worker['server'].scheduler['fed'].state_dict())
         self.scheduler['global'].load_state_dict(self.worker['server'].scheduler['global'].state_dict())
 
         self.logger.load_state_dict(self.worker['server'].logger.state_dict())
@@ -84,13 +77,13 @@ class Controller:
 
     def optimizer_state_dict(self):
         return {'local': self.optimizer['local'].state_dict(),
-                'global': self.optimizer['global'].state_dict(),
-                'client': self.optimizer['client'].state_dict()}
+                'fed': self.optimizer['fed'].state_dict(),
+                'global': self.optimizer['global'].state_dict()}
 
     def scheduler_state_dict(self):
         return {'local': self.scheduler['local'].state_dict(),
-                'global': self.scheduler['global'].state_dict(),
-                'client': self.scheduler['client'].state_dict()}
+                'fed': self.scheduler['fed'].state_dict(),
+                'global': self.scheduler['global'].state_dict()}
 
     def logger_state_dict(self):
         return self.logger.state_dict()

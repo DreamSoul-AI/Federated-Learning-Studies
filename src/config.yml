@@ -6,11 +6,11 @@ control:
   batch_size: 250
   step_period: 1
   num_steps: 400
-  eval_period: 10
+  eval_period: 200
   optimizer:
     optimizer_name: SGD
-    lr: 1
-    momentum: 0
+    lr: 0.01
+    momentum: 0.9
     scheduler_name: None
   data_mode:
     num_splits: 10
@@ -21,17 +21,16 @@ control:
     active_ratio: 0.2
     num_steps: 2
     eval_mode: server
-    optimizer:
-      optimizer_name: Adam
+    local_optimizer:
+      optimizer_name: SGD
+      lr: 0.01
+      momentum: 0
+      scheduler_name: None
+    fed_optimizer:
+      optimizer_name: SGD
       lr: 0.01
       momentum: 0.9
-      scheduler_name: CosineAnnealingLR
-  client_optimizer:
-    optimizer:
-      optimizer_name: Adam
-      lr: 0.01
-      momentum: 0.95
-      scheduler_name: CosineAnnealingLR
+      scheduler_name: None
 
 # experiment
 pin_memory: True

@@ -68,7 +68,6 @@ def main():
         model_name = ['linear', 'mlp', 'cnn', 'resnet18']
         batch_size = ['250']
         step_period = ['1']
-    
         num_steps = ['400']
         eval_period = ['10']
         optimizer_name = ['SGD']
@@ -79,18 +78,29 @@ def main():
         optimizer_controls = list('-'.join(x) for x in itertools.product(*optimizer_controls))
         data_mode = ['2-horiz-iid', '2-horiz-noniid~c~2', '2-horiz-noniid~d~0.1', '2-horiz-noniid~d~0.3']
         dist_agg_mode = ['sync']
-        dist_active_ratio = ['1.0']
+        dist_active_ratio = ['0.2']
         dist_num_steps = ['2']
         dist_eval_mode = ['server']
         dist_mode = [dist_agg_mode, dist_active_ratio, dist_num_steps, dist_eval_mode]
         dist_mode_controls = list('-'.join(x) for x in itertools.product(*dist_mode))
-        dist_optimizer_name = ['SGD']
-        dist_lr = ['0.01']
-        dist_momentum = ['0.9']
-        dist_scheduler_name = ['CosineAnnealingLR']
-        dist_optimizer_controls = [dist_optimizer_name, dist_lr, dist_momentum, dist_scheduler_name]
-        dist_optimizer_controls = list('~'.join(x) for x in itertools.product(*dist_optimizer_controls))
-        dist_mode = [dist_mode_controls, dist_optimizer_controls]
+
+        dist_local_optimizer_name = ['SGD']
+        dist_local_lr = ['0.01']
+        dist_local_momentum = ['0.9']
+        dist_local_scheduler_name = ['CosineAnnealingLR']
+        dist_local_optimizer_controls = [dist_local_optimizer_name, dist_local_lr, dist_local_momentum,
+                                         dist_local_scheduler_name]
+        dist_local_optimizer_controls = list('~'.join(x) for x in itertools.product(*dist_local_optimizer_controls))
+
+        dist_fed_optimizer_name = ['SGD']
+        dist_fed_lr = ['0.01']
+        dist_fed_momentum = ['0.9']
+        dist_fed_scheduler_name = ['CosineAnnealingLR']
+        dist_fed_optimizer_controls = [dist_fed_optimizer_name, dist_fed_lr, dist_fed_momentum,
+                                         dist_fed_scheduler_name]
+        dist_fed_optimizer_controls = list('~'.join(x) for x in itertools.product(*dist_fed_optimizer_controls))
+        
+        dist_mode = [dist_mode_controls, dist_local_optimizer_controls, dist_fed_optimizer_controls]
         dist_mode = list('-'.join(x) for x in itertools.product(*dist_mode))
         control_name = [[data_name, model_name, batch_size, step_period, num_steps, eval_period, optimizer_controls,
                          data_mode, dist_mode]]
