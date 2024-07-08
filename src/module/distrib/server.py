@@ -107,11 +107,10 @@ class Server:
 
         for i in range(len(active_client)):
             result_i = active_client[i].train(self.model.state_dict(),
-                                                     self.optimizer['local'].state_dict(),
-                                                     self.scheduler['local'].state_dict())
-
+                                              self.optimizer['local'].state_dict(),
+                                              self.scheduler['local'].state_dict())
             result.append(result_i)
-
+        exit()
         model_state_dict = [result[i]['model_state_dict'] for i in range(len(result))]
         optimizer_state_dict = [result[i]['optimizer_state_dict'] for i in range(len(result))]
         scheduler_state_dict = [result[i]['scheduler_state_dict'] for i in range(len(result))]

@@ -76,7 +76,7 @@ def main():
         scheduler_name = ['None']
         optimizer_controls = [optimizer_name, lr, momentum, scheduler_name]
         optimizer_controls = list('-'.join(x) for x in itertools.product(*optimizer_controls))
-        data_mode = ['2-horiz-iid', '2-horiz-noniid~c~2', '2-horiz-noniid~d~0.1', '2-horiz-noniid~d~0.3']
+        data_mode = ['10-horiz-iid', '10-horiz-noniid~r~2~1', '10-horiz-noniid~c~2', '10-horiz-noniid~d~0.1']
         dist_agg_mode = ['sync']
         dist_active_ratio = ['0.2']
         dist_num_steps = ['2']
