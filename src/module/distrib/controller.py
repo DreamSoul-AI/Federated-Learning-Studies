@@ -26,12 +26,10 @@ class Controller:
 
         local_cfg = self.make_local_cfg()
         self.worker['client'] = []
-
         for i in range(len(self.data_split['data'])):
             dataset_i = {k: split_dataset(dataset[k], self.data_split['data'][i][k]) for k in dataset}
             client_i = Client(i, dataset_i, local_cfg)
             self.worker['client'].append(client_i)
-        exit()
         return
 
     def make_local_cfg(self):

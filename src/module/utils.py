@@ -1,3 +1,4 @@
+import hashlib
 import numpy as np
 import torch
 from collections.abc import Iterable, Sequence, Mapping
@@ -31,3 +32,9 @@ def recur(fn, input, *args):
     else:
         raise ValueError('Not valid input type')
     return output
+
+
+def hash(input_string):
+    hash_object = hashlib.md5(input_string.encode())
+    hex_digest = hash_object.hexdigest()
+    return hex_digest

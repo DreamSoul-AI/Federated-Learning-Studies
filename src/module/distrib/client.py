@@ -12,7 +12,7 @@ class Client:
         self.dataset = dataset
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'],
-                                            self.cfg['optimizer']['num_steps'])
+                                            self.cfg['num_steps'])
         self.logger = make_logger(self.cfg['logger_path'], data_name=self.cfg['data_name'])
 
     def train(self, model_state_dict, optimizer_state_dict, scheduler_state_dict):

@@ -59,6 +59,7 @@ def process_control():
         cfg[tag]['local'] = {}
         cfg[tag]['local']['device'] = cfg['device']
         cfg[tag]['local']['model'] = cfg['model']
+        cfg[tag]['local']['num_steps'] = cfg['dist_mode']['num_steps']
 
         cfg[tag]['local']['optimizer'] = cfg['dist_mode']['local_optimizer']
         cfg[tag]['local']['optimizer']['lr'] = float(cfg[tag]['local']['optimizer']['lr'])
@@ -67,7 +68,7 @@ def process_control():
         cfg[tag]['local']['optimizer']['nesterov'] = True if cfg[tag]['local']['optimizer']['momentum'] != 0 else False
         cfg[tag]['local']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
         cfg[tag]['local']['optimizer']['step_period'] = cfg['step_period']
-        cfg[tag]['local']['optimizer']['num_steps'] = cfg['dist_mode']['num_steps']
+        cfg[tag]['local']['optimizer']['num_steps'] = cfg['num_steps']
 
         cfg[tag]['fed'] = {}
         cfg[tag]['fed']['device'] = cfg['device']
