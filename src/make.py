@@ -88,8 +88,9 @@ def main():
         dist_local_lr = ['0.01']
         dist_local_momentum = ['0.9']
         dist_local_scheduler_name = ['CosineAnnealingLR']
+        dist_local_full_grad = ['True']
         dist_local_optimizer_controls = [dist_local_optimizer_name, dist_local_lr, dist_local_momentum,
-                                         dist_local_scheduler_name]
+                                         dist_local_scheduler_name, dist_local_full_grad]
         dist_local_optimizer_controls = list('~'.join(x) for x in itertools.product(*dist_local_optimizer_controls))
 
         dist_fed_optimizer_name = ['SGD']

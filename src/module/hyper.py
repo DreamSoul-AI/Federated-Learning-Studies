@@ -69,6 +69,7 @@ def process_control():
         cfg[tag]['local']['optimizer']['batch_size'] = {'train': cfg['batch_size'], 'test': cfg['batch_size']}
         cfg[tag]['local']['optimizer']['step_period'] = cfg['step_period']
         cfg[tag]['local']['optimizer']['num_steps'] = cfg['num_steps']
+        cfg[tag]['local']['optimizer']['full_grad'] = bool(cfg[tag]['local']['optimizer']['full_grad'])
 
         cfg[tag]['fed'] = {}
         cfg[tag]['fed']['device'] = cfg['device']

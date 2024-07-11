@@ -26,6 +26,7 @@ control:
       lr: 0.01
       momentum: 0
       scheduler_name: None
+      full_grad: True
     fed_optimizer:
       optimizer_name: SGD
       lr: 0.01
