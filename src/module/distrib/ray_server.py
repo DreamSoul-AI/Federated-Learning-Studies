@@ -20,6 +20,119 @@ class Server:
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'], shuffle=False)
 
+    # def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
+    #     with torch.no_grad():
+    #         if len(model_state_dict) > 0:
+    #             self.optimizer['global'].zero_grad()
+    #             valid_data_size = [len(self.data_split['data'][active_client_id[i]])
+    #                                for i in range(len(active_client_id))]
+    #             weight = torch.tensor(valid_data_size)
+    #             weight = weight / weight.sum()
+    #             for k, v in self.model.named_parameters():
+    #                 parameter_type = k.split('.')[-1]
+    #                 if 'weight' in parameter_type or 'bias' in parameter_type:
+    #                     tmp_v = v.data.new_zeros(v.size())
+    #                     for i in range(len(active_client_id)):
+    #                         tmp_v += weight[i] * model_state_dict[i][k]
+    #                     v.grad = (v.data - tmp_v).detach()
+    #             self.optimizer['global'].step()
+    #             self.scheduler['global'].step()
+    #             # print("Global Optimizer LR after update:",
+    #             #       [group['lr'] for group in self.optimizer['global'].param_groups])
+    #             self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
+    #             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
+    #
+    #             # print(self.optimizer['global'])
+    #
+    #     return
+
+
+    #client step
+    # def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
+    #
+    #     # average
+    #     with torch.no_grad():
+    #         if len(model_state_dict) > 0:
+    #             self.optimizer['global'].zero_grad()
+    #             valid_data_size = [len(self.data_split['data'][active_client_id[i]])
+    #                                for i in range(len(active_client_id))]
+    #             weight = torch.tensor(valid_data_size)
+    #             weight = weight / weight.sum()
+    #             for k, v in self.model.named_parameters():
+    #                 parameter_type = k.split('.')[-1]
+    #                 if 'weight' in parameter_type or 'bias' in parameter_type:
+    #                     tmp_v = v.data.new_zeros(v.size())
+    #                     for i in range(len(active_client_id)):
+    #                         tmp_v += weight[i] * model_state_dict[i][k]
+    #
+    #                     v.grad = (v.data - tmp_v).detach()
+    #             self.optimizer['global'].step()
+    #             self.scheduler['global'].step()
+    #
+    #     # client step
+    #     with torch.no_grad():
+    #         if len(model_state_dict) > 0:
+    #             self.optimizer['client'].zero_grad()
+    #             valid_data_size = [len(self.data_split['data'][active_client_id[i]])
+    #                                for i in range(len(active_client_id))]
+    #             weight = torch.tensor(valid_data_size)
+    #             weight = weight / weight.sum()
+    #             for i in range(len(active_client_id)):
+    #                 for k, v in self.model.named_parameters():
+    #                     parameter_type = k.split('.')[-1]
+    #                     if 'weight' in parameter_type or 'bias' in parameter_type:
+    #                         diff = v.data - model_state_dict[i][k]
+    #
+    #                         v.grad = diff.detach()
+    #
+    #                 self.optimizer['client'].step()
+    #                 self.scheduler['client'].step()
+    #
+    #         # old
+    #         #
+    #         self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
+    #         # print(optimizer_state_dict[0])
+    #         # print("Here")
+    #
+    #         # new
+    #         # merged_state = {}
+    #         # possible_state_keys = ['momentum_buffer', 'exp_avg', 'exp_avg_sq']
+    #         #
+    #         # local_optimizer_state_dict = self.optimizer['local'].state_dict()
+    #         #
+    #         # for i in range(len(active_client_id)):
+    #         #     state_dict = optimizer_state_dict[i]
+    #         #     for param_idx, param_state in state_dict['state'].items():
+    #         #         if param_idx not in merged_state:
+    #         #             merged_state[param_idx] = {}
+    #         #
+    #         #         for state_name in possible_state_keys + ['step']:
+    #         #             if state_name in param_state:
+    #         #                 state_value = param_state[state_name]
+    #         #                 if state_name not in merged_state[param_idx]:
+    #         #
+    #         #                     if state_name == 'step':
+    #         #                         merged_state[param_idx][state_name] = local_optimizer_state_dict['state'].get(
+    #         #                             param_idx, {}).get('step', torch.tensor(0.0))
+    #         #                     else:
+    #         #                         merged_state[param_idx][state_name] = state_value.new_zeros(
+    #         #                             size=state_value.size())
+    #         #                 # step max or not
+    #         #                 # if state_name == 'step':
+    #         #                 #     merged_state[param_idx][state_name] = max(merged_state[param_idx][state_name],
+    #         #                 #                                               state_value)
+    #         #                 if state_name != 'step':
+    #         #                     merged_state[param_idx][state_name] += state_value * weight[i]
+    #         #
+    #         # optimizer_state_to_load = {'state': merged_state,
+    #         #                            'param_groups': local_optimizer_state_dict['param_groups']}
+    #         # self.optimizer['local'].load_state_dict(optimizer_state_to_load)
+    #
+    #         self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
+    #
+    #     return
+
+    #3-level
     def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
 
         initial_model_state = {k: v.clone() for k, v in self.model.state_dict().items()}
@@ -43,7 +156,6 @@ class Server:
                     self.optimizer['client'].step()
                     self.scheduler['client'].step()
 
-            # global level
             diffs = {}
             for k, v in self.model.named_parameters():
                 parameter_type = k.split('.')[-1]
@@ -61,39 +173,42 @@ class Server:
             self.scheduler['global'].step()
 
             # local level
-            merged_state = {}
-            possible_state_keys = ['momentum_buffer', 'exp_avg', 'exp_avg_sq']
+            # merged_state = {}
+            # possible_state_keys = ['momentum_buffer', 'exp_avg', 'exp_avg_sq']
+            #
+            # local_optimizer_state_dict = self.optimizer['local'].state_dict()
+            #
+            # for i in range(len(active_client_id)):
+            #     state_dict = optimizer_state_dict[i]
+            #     for param_idx, param_state in state_dict['state'].items():
+            #         if param_idx not in merged_state:
+            #             merged_state[param_idx] = {}
+            #
+            #         for state_name in possible_state_keys + ['step']:
+            #             if state_name in param_state:
+            #                 state_value = param_state[state_name]
+            #                 if state_name not in merged_state[param_idx]:
+            #
+            #                     if state_name == 'step':
+            #                         merged_state[param_idx][state_name] = local_optimizer_state_dict['state'].get(
+            #                             param_idx, {}).get('step', torch.tensor(0.0))
+            #                     else:
+            #                         if state_value is not None:
+            #                             merged_state[param_idx][state_name] = state_value.new_zeros(
+            #                                 size=state_value.size())
+            #                 # step max or not
+            #                 # if state_name == 'step':
+            #                 #     merged_state[param_idx][state_name] = max(merged_state[param_idx][state_name],
+            #                 #                                               state_value)
+            #                 if state_name != 'step' and state_value is not None:
+            #                     merged_state[param_idx][state_name] += state_value * weight[i]
+            #
+            # optimizer_state_to_load = {'state': merged_state,
+            #                            'param_groups': local_optimizer_state_dict['param_groups']}
+            # self.optimizer['local'].load_state_dict(optimizer_state_to_load)
 
-            local_optimizer_state_dict = self.optimizer['local'].state_dict()
-
-            for i in range(len(active_client_id)):
-                state_dict = optimizer_state_dict[i]
-                for param_idx, param_state in state_dict['state'].items():
-                    if param_idx not in merged_state:
-                        merged_state[param_idx] = {}
-
-                    for state_name in possible_state_keys + ['step']:
-                        if state_name in param_state:
-                            state_value = param_state[state_name]
-                            if state_name not in merged_state[param_idx]:
-
-                                if state_name == 'step':
-                                    merged_state[param_idx][state_name] = local_optimizer_state_dict['state'].get(
-                                        param_idx, {}).get('step', torch.tensor(0.0))
-                                else:
-                                    if state_value is not None:
-                                        merged_state[param_idx][state_name] = state_value.new_zeros(
-                                            size=state_value.size())
-                            # step max or not
-                            # if state_name == 'step':
-                            #     merged_state[param_idx][state_name] = max(merged_state[param_idx][state_name],
-                            #                                               state_value)
-                            if state_name != 'step' and state_value is not None:
-                                merged_state[param_idx][state_name] += state_value * weight[i]
-
-            optimizer_state_to_load = {'state': merged_state,
-                                       'param_groups': local_optimizer_state_dict['param_groups']}
-            self.optimizer['local'].load_state_dict(optimizer_state_to_load)
+            # old
+            self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
 
             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
 
