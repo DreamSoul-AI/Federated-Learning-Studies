@@ -10,7 +10,7 @@ parser.add_argument('--init_seed', default=0, type=int)
 parser.add_argument('--round', default=4, type=int)
 parser.add_argument('--experiment_step', default=1, type=int)
 parser.add_argument('--num_experiments', default=1, type=int)
-parser.add_argument('--resume_mode', default=0, type=int)
+parser.add_argument('--resume_mode', default=1, type=int)
 parser.add_argument('--mode', default=None, type=str)
 parser.add_argument('--split_round', default=65535, type=int)
 args = vars(parser.parse_args())
@@ -48,11 +48,13 @@ def main():
     filename = '{}_{}'.format(run, mode)
     if mode == 'base':
         script_name = [['{}_model.py'.format(run)]]
-        data_name = ['MNIST', 'CIFAR10']
-        model_name = ['linear', 'mlp', 'cnn', 'resnet18']
+        # data_name = ['MNIST', 'CIFAR10']
+        data_name = ['CIFAR10']
+        # model_name = ['linear', 'mlp', 'cnn', 'resnet18']
+        model_name = ['cnn']
         batch_size = ['250']
         step_period = ['1']
-        num_steps = ['400']
+        num_steps = ['40000']
         eval_period = ['200']
         optimizer_name = ['SGD']
         lr = ['0.1']
@@ -64,29 +66,38 @@ def main():
         controls = make_controls(script_name, init_seeds, num_experiments, resume_mode, control_name)
     elif mode == 'fl':
         script_name = [['{}_model_fl.py'.format(run)]]
-        data_name = ['MNIST', 'CIFAR10']
-        model_name = ['linear', 'mlp', 'cnn', 'resnet18']
+        # data_name = ['MNIST', 'CIFAR10']
+        data_name = ['CIFAR10']
+        #model_name = ['linear', 'mlp', 'cnn', 'resnet18']
+        # model_name = ['linear']
+        model_name = ['cnn']
         batch_size = ['250']
         step_period = ['1']
-        num_steps = ['400']
-        eval_period = ['20']
+        # num_steps = ['2000']
+        # eval_period = ['10']
+        num_steps = ['200']
+        eval_period = ['1']
         optimizer_name = ['SGD']
         lr = ['1']
         momentum = ['0']
         scheduler_name = ['None']
         optimizer_controls = [optimizer_name, lr, momentum, scheduler_name]
         optimizer_controls = list('-'.join(x) for x in itertools.product(*optimizer_controls))
-        data_mode = ['10-horiz-iid', '10-horiz-noniid~r~2~1', '10-horiz-noniid~c~2', '10-horiz-noniid~d~0.1']
+        # data_mode = ['10-horiz-iid', '10-horiz-noniid~r~2~1', '10-horiz-noniid~c~2', '10-horiz-noniid~d~0.1']
+        data_mode = ['100-horiz-noniid~r~2~1']
+        # data_mode = ['100-horiz-iid']
         dist_agg_mode = ['sync']
-        dist_active_ratio = ['0.2']
-        dist_num_steps = ['20']
+        dist_active_ratio = ['0.1']
+        dist_num_steps = ['1']
+        # dist_num_steps = ['10']
         dist_eval_mode = ['server']
         dist_mode = [dist_agg_mode, dist_active_ratio, dist_num_steps, dist_eval_mode]
         dist_mode_controls = list('-'.join(x) for x in itertools.product(*dist_mode))
 
         dist_local_optimizer_name = ['SGD']
-        dist_local_lr = ['0.01']
-        dist_local_momentum = ['0.9']
+        dist_local_lr = ['0.1']
+        # dist_local_lr = ['0.5', '1', '0.1', '0.01', '0.001']
+        dist_local_momentum = ['0']
         dist_local_scheduler_name = ['CosineAnnealingLR']
         dist_local_full_grad = ['True']
         dist_local_optimizer_controls = [dist_local_optimizer_name, dist_local_lr, dist_local_momentum,
@@ -94,8 +105,10 @@ def main():
         dist_local_optimizer_controls = list('~'.join(x) for x in itertools.product(*dist_local_optimizer_controls))
 
         dist_fed_optimizer_name = ['SGD']
-        dist_fed_lr = ['0.01']
-        dist_fed_momentum = ['0.9']
+        dist_fed_lr = ['1', '0.5',  '0.1', '0.01', '0.001']  # 添加多个学习率值
+        dist_fed_momentum = ['0', '0.5', '0.9', '0.99', '0.999']  # 添加多个动量值
+        # dist_fed_lr = ['0.1']  # 添加多个学习率值
+        # dist_fed_momentum = ['0.9']  # 添加多个动量值
         dist_fed_scheduler_name = ['CosineAnnealingLR']
         dist_fed_optimizer_controls = [dist_fed_optimizer_name, dist_fed_lr, dist_fed_momentum,
                                          dist_fed_scheduler_name]

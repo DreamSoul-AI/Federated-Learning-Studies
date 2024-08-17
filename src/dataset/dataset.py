@@ -161,6 +161,9 @@ def iid(dataset, num_splits):
                                       for m in range(len(unique_target_i_k))}
             else:
                 target_split[i][k] = {target: int((target_i_k == target).sum()) for target in target_split[i]['train']}
+            #debug
+            print(f"Class distribution for split {i}: {target_split[i][k]}")
+
     return data_split, target_split
 
 
@@ -260,12 +263,17 @@ def noniid(dataset, num_splits, stat_mode):
         stride = int(data_split_mode_list[3])
         pivot_split = torch.arange(0, target_size * num_splits, stride)
         target_idx_split_ = []
+
+
         for i in range(len(pivot_split)):
             target_idx_split_i = torch.arange(pivot_split[i], pivot_split[i] + num_classes_per_user)
             target_idx_split_i = torch.sort(target_idx_split_i % target_size)[0]
             target_idx_split_.append(target_idx_split_i.tolist())
         target_idx_split_ = target_idx_split_[:num_splits]
         target_idx_split = [{k: None for k in dataset} for _ in range(target_size)]
+
+
+
         for k in dataset:
             target = torch.tensor(dataset[k].target)
             _, num_shard = torch.unique(torch.tensor(target_idx_split_).view(-1), return_counts=True)
@@ -290,6 +298,9 @@ def noniid(dataset, num_splits, stat_mode):
                 unique_target_i_k, num_target_i = torch.unique(target_i_k, sorted=True, return_counts=True)
                 target_split[i][k] = {unique_target_i_k[m].item(): num_target_i[m].item() for m in
                                       range(len(unique_target_i_k))}
+                
+                print(f"Class distribution for split {i}: {target_split[i][k]}")
+
     else:
         raise ValueError('Not valid data split mode tag')
     return data_split, target_split

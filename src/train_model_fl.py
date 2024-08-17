@@ -68,9 +68,9 @@ def runExperiment():
                      'global': make_scheduler(optimizer['global'], cfg[cfg['tag']]['global']['optimizer'])}
         logger = make_logger(cfg['logger_path'], data_name=cfg['data_name'])
         model.load_state_dict(result['model'])
-        optimizer['local'].load_state_dict(result['optimize']['local'])
-        optimizer['fed'].load_state_dict(result['optimize']['fed'])
-        optimizer['global'].load_state_dict(result['optimize']['global'])
+        optimizer['local'].load_state_dict(result['optimizer']['local'])
+        optimizer['fed'].load_state_dict(result['optimizer']['fed'])
+        optimizer['global'].load_state_dict(result['optimizer']['global'])
         scheduler['local'].load_state_dict(result['scheduler']['local'])
         scheduler['fed'].load_state_dict(result['scheduler']['fed'])
         scheduler['global'].load_state_dict(result['scheduler']['global'])
@@ -80,9 +80,12 @@ def runExperiment():
     controller = make_controller(data_split, model, optimizer, scheduler, logger)
     controller.make_worker(dataset)
     while cfg['step'] < cfg['num_steps']:
+
         controller.train()
+
         if cfg['step'] % cfg['eval_period'] == 0:
             controller.test()
+
         controller.update()
         result = {'cfg': cfg, 'step': cfg['step'], 'data_split': data_split,
                   'model': controller.model_state_dict(),

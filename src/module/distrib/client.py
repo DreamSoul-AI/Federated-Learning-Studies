@@ -29,10 +29,12 @@ class Client:
         scheduler.load_state_dict(scheduler_state_dict)
 
         self.cfg['local_step'] = 0
+
+
         while self.cfg['local_step'] < self.cfg['num_steps']:
             with self.logger.profiler:
                 for i, input in enumerate(self.data_loader['train']):
-                    print(i)
+
                     if i % self.cfg['step_period'] == 0 and self.cfg['profile']:
                         self.logger.profiler.step()
                     input_size = input['data'].size(0)
@@ -50,7 +52,7 @@ class Client:
                     self.logger.append(evaluation, 'train', n=input_size)
                     if self.cfg['local_step'] == self.cfg['num_steps']:
                         break
-        model = model.to('cpu')
+        model = model.to(self.cfg['device'])
         result = {'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(),
                   'scheduler_state_dict': scheduler.state_dict(), 'logger_state_dict': self.logger.state_dict()}
         self.logger.reset()
@@ -67,7 +69,7 @@ class Client:
                 for i, input in enumerate(self.data_loader['train']):
                     input = to_device(input, self.cfg['device'])
                     model(input)
-                model = model.to('cpu')
+                model = model.to(self.cfg['device'])
                 result = {'model_state_dict': model.state_dict()}
             else:
                 result = None

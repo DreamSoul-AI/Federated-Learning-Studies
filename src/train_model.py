@@ -27,6 +27,7 @@ def main():
         cfg['tag'] = '_'.join([x for x in tag_list if x])
         process_control()
         print('Experiment: {}'.format(cfg['tag']))
+
         runExperiment()
     return
 

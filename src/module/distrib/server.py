@@ -6,6 +6,7 @@ from config import cfg
 from dataset import make_data_loader, split_dataset
 from model import make_model, make_optimizer, make_scheduler, make_batchnorm
 
+from module import to_device
 
 class Server:
     def __init__(self, id, dataset, data_split, model, optimizer, scheduler, logger, cfg):
@@ -19,29 +20,51 @@ class Server:
         self.cfg = cfg
         self.data_loader = make_data_loader(self.dataset, self.cfg['optimizer']['batch_size'], shuffle=False)
 
+    # def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
+    #     with torch.no_grad():
+    #         if len(model_state_dict) > 0:
+    #             self.optimizer['global'].zero_grad()
+    #             valid_data_size = [len(self.data_split['data'][active_client_id[i]])
+    #                               for i in range(len(active_client_id))]
+    #             weight = torch.tensor(valid_data_size)
+    #             weight = weight / weight.sum()
+    #             for k, v in self.model.named_parameters():
+    #                 parameter_type = k.split('.')[-1]
+    #                 if 'weight' in parameter_type or 'bias' in parameter_type:
+    #                     tmp_v = v.data.new_zeros(v.size())
+    #                     for i in range(len(active_client_id)):
+    #                         tmp_v += weight[i] * model_state_dict[i][k]
+    #                     v.grad = (v.data - tmp_v).detach()
+    #             self.optimizer['global'].step()
+    #             self.scheduler['global'].step()
+    #             self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
+    #             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
+    #     return
+
     def synchronize(self, active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict):
-
+    
         initial_model_state = {k: v.clone() for k, v in self.model.state_dict().items()}
-
+    
         # fed level
         with torch.no_grad():
             if len(model_state_dict) > 0:
-
+    
                 valid_data_size = [len(self.data_split['data'][active_client_id[i]])
-                                   for i in range(len(active_client_id))]
+                                    for i in range(len(active_client_id))]
                 weight = torch.tensor(valid_data_size)
                 weight = weight / weight.sum()
                 for i in range(len(active_client_id)):
-                    self.optimizer['local'].zero_grad()
+
+                    self.optimizer['fed'].zero_grad()
                     for k, v in self.model.named_parameters():
                         parameter_type = k.split('.')[-1]
                         if 'weight' in parameter_type or 'bias' in parameter_type:
                             diff = v.data - model_state_dict[i][k]
-
+    
                             v.grad = diff.detach()
                     self.optimizer['fed'].step()
                     self.scheduler['fed'].step()
-
+    
             # global level
             diffs = {}
             for k, v in self.model.named_parameters():
@@ -49,61 +72,100 @@ class Server:
                 if 'weight' in parameter_type or 'bias' in parameter_type:
                     diff = initial_model_state[k] - v.data
                     diffs[k] = diff.clone().detach()
-
+    
             self.model.load_state_dict(initial_model_state)
-
+    
             self.optimizer['global'].zero_grad()
             for k, v in self.model.named_parameters():
                 if k in diffs:
                     v.grad = diffs[k].detach()
             self.optimizer['global'].step()
             self.scheduler['global'].step()
-
+    
             # local level
-            merged_state = {}
-            possible_state_keys = ['momentum_buffer', 'exp_avg', 'exp_avg_sq']
-
-            local_optimizer_state_dict = self.optimizer['local'].state_dict()
-
-            for i in range(len(active_client_id)):
-                state_dict = optimizer_state_dict[i]
-                for param_idx, param_state in state_dict['state'].items():
-                    if param_idx not in merged_state:
-                        merged_state[param_idx] = {}
-
-                    for state_name in possible_state_keys + ['step']:
-                        if state_name in param_state:
-                            state_value = param_state[state_name]
-                            if state_name not in merged_state[param_idx]:
-
-                                if state_name == 'step':
-                                    merged_state[param_idx][state_name] = local_optimizer_state_dict['state'].get(
-                                        param_idx, {}).get('step', torch.tensor(0.0))
-                                else:
-                                    if state_value is not None:
-                                        merged_state[param_idx][state_name] = state_value.new_zeros(
-                                            size=state_value.size())
-                            # step max or not
-                            # if state_name == 'step':
-                            #     merged_state[param_idx][state_name] = max(merged_state[param_idx][state_name],
-                            #                                               state_value)
-                            if state_name != 'step' and state_value is not None:
-                                merged_state[param_idx][state_name] += state_value * weight[i]
-
-            optimizer_state_to_load = {'state': merged_state,
-                                       'param_groups': local_optimizer_state_dict['param_groups']}
-            self.optimizer['local'].load_state_dict(optimizer_state_to_load)
-
+            # merged_state = {}
+            # possible_state_keys = ['momentum_buffer', 'exp_avg', 'exp_avg_sq']
+            #
+            # local_optimizer_state_dict = self.optimizer['local'].state_dict()
+            #
+            # for i in range(len(active_client_id)):
+            #     state_dict = optimizer_state_dict[i]
+            #     for param_idx, param_state in state_dict['state'].items():
+            #         if param_idx not in merged_state:
+            #             merged_state[param_idx] = {}
+            #
+            #         for state_name in possible_state_keys + ['step']:
+            #             if state_name in param_state:
+            #                 state_value = param_state[state_name]
+            #                 if state_name not in merged_state[param_idx]:
+            #
+            #                     if state_name == 'step':
+            #                         merged_state[param_idx][state_name] = local_optimizer_state_dict['state'].get(
+            #                             param_idx, {}).get('step', torch.tensor(0.0))
+            #                     else:
+            #                         if state_value is not None:
+            #                             merged_state[param_idx][state_name] = state_value.new_zeros(
+            #                                 size=state_value.size())
+            #                 # step max or not
+            #                 # if state_name == 'step':
+            #                 #     merged_state[param_idx][state_name] = max(merged_state[param_idx][state_name],
+            #                 #                                               state_value)
+            #                 if state_name != 'step' and state_value is not None:
+            #                     merged_state[param_idx][state_name] += state_value * weight[i]
+            #
+            # optimizer_state_to_load = {'state': merged_state,
+            #                            'param_groups': local_optimizer_state_dict['param_groups']}
+            # self.optimizer['local'].load_state_dict(optimizer_state_to_load)
+    
+            self.optimizer['local'].load_state_dict(optimizer_state_dict[0])
+    
             self.scheduler['local'].load_state_dict(scheduler_state_dict[0])
-
+    
         return
 
     def train(self, client):
         start_time = time.time()
         num_active_clients = int(np.ceil(cfg['dist_mode']['active_ratio'] * len(client)))
-        active_client_id = torch.randperm(len(client))[:num_active_clients]
-        active_client = [client[i] for i in range(len(client)) if i in active_client_id]
+
+
+        clients_per_round = num_active_clients
+        total_clients = len(client)
+
+
+        num_rounds = total_clients // clients_per_round
+
+
+        if 'current_round' not in cfg:
+            cfg['current_round'] = 0
+
+
+        start_idx = cfg['current_round'] * clients_per_round
+        end_idx = start_idx + clients_per_round
+
+
+        if end_idx > total_clients:
+            end_idx = total_clients
+            start_idx = total_clients - clients_per_round
+
+
+        active_client_id = list(range(start_idx, end_idx))
+        active_client = [client[i] for i in active_client_id]
+
+
+        cfg['current_round'] = (cfg['current_round'] + 1) % num_rounds
+
+
+        # active_client_id = torch.randperm(len(client))[:num_active_clients]
+        # active_client = [client[i] for i in range(len(client)) if i in active_client_id]
         result = []
+
+        # # Debug
+        # print(f"Total clients: {total_clients}")
+        # print(f"Clients per round: {clients_per_round}")
+        # print(f"Current round: {cfg['current_round']}")
+        # print(f"Selected active client IDs: {active_client_id}")
+        # print(f"Selected active clients: {active_client}")
+
 
         for i in range(len(active_client)):
             result_i = active_client[i].train(self.model.state_dict(),
@@ -128,6 +190,7 @@ class Server:
         self.logger.append(info, 'train')
         print(self.logger.write('train'))
 
+
         cfg['step'] += cfg[cfg['tag']]['local']['num_steps']
 
         return active_client_id, model_state_dict, optimizer_state_dict, scheduler_state_dict
@@ -145,7 +208,9 @@ class Server:
         with torch.no_grad():
             self.model.train(False)
             for i, input in enumerate(self.data_loader['test']):
+                input = to_device(input, self.cfg['device'])
                 input_size = input['data'].size(0)
+                self.model.to(cfg['device'])
                 output = self.model(input)
                 evaluation = self.logger.evaluate('test', 'batch', input, output)
                 self.logger.append(evaluation, 'test', input_size)
@@ -155,6 +220,7 @@ class Server:
                              'Test Epoch (S): {}'.format(cfg['step'])]}
             self.logger.append(info, 'test')
             print(self.logger.write('test'))
+
         return
 
     def make_batchnorm_client(self, client, momentum, track_running_stats):

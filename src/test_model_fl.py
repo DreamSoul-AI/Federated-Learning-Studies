@@ -6,7 +6,7 @@ from config import cfg, process_args
 from dataset import make_dataset, process_dataset
 from metric import make_logger
 from model import make_model
-from module import save, resume, process_control, make_controller
+from module import hash, save, resume, process_control, make_controller
 
 cudnn.benchmark = True
 parser = argparse.ArgumentParser(description='cfg')
@@ -22,6 +22,7 @@ def main():
     for i in range(cfg['num_experiments']):
         tag_list = [str(seeds[i]), cfg['control_name']]
         cfg['tag'] = '_'.join([x for x in tag_list if x])
+        cfg['hash_tag'] = hash(cfg['tag'])
         process_control()
         print('Experiment: {}'.format(cfg['tag']))
         runExperiment()
@@ -33,11 +34,11 @@ def runExperiment():
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
     cfg['path'] = os.path.join('output', 'exp')
-    cfg['tag_path'] = os.path.join(cfg['path'], cfg['tag'])
+    cfg['tag_path'] = os.path.join(cfg['path'], cfg['hash_tag'])
     cfg['checkpoint_path'] = os.path.join(cfg['tag_path'], 'checkpoint')
     cfg['best_path'] = os.path.join(cfg['tag_path'], 'best')
-    cfg['logger_path'] = os.path.join('output', 'logger', 'test', 'runs', cfg['tag'])
-    cfg['result_path'] = os.path.join('output', 'result', cfg['tag'])
+    cfg['logger_path'] = os.path.join('output', 'logger', 'test', 'runs', cfg['hash_tag'])
+    cfg['result_path'] = os.path.join('output', 'result', cfg['hash_tag'])
     dataset = make_dataset(cfg['data_name'])
     dataset = process_dataset(dataset)
     model = make_model(cfg['model'])
